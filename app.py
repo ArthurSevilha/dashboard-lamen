@@ -13,58 +13,93 @@ def classificar_nota(nota):
     elif nota >= 3.0:
         return "Ruim"
     else:
+        if nota == 0.0:
+            return "NA"
         return "Péssimo"
 
+def arredondar_estrelas(estrelas):
+    if estrelas > 0:
+        qtd_estrelas = int(round(estrelas))
+        if qtd_estrelas < 1:
+            qtd_estrelas = 1
+        nota_lamen = f"{estrelas:.2f} " + ("🍜" * qtd_estrelas)
+    else:
+        nota_lamen = "NA"
+
+    return nota_lamen
+
+def arrumar_estilo_null(estilo):
+    if not estilo:
+        return "NA"
+    return estilo
 
 def montar_tabela(lamens):
     """Prepara as linhas para a tabela exibida no Streamlit."""
     tabela = []
 
     for lamen in lamens:
-        if not lamen["estrelas"] == 0.0:
-            qtd_estrelas = int(round(lamen["estrelas"]))
-            nota_lamen = f"{lamen['estrelas']:.1f} " + ("🍜" * qtd_estrelas)
-        else:
-            nota_lamen = "NA"
 
         linha = {
             "Variedade / Nome": lamen["variedade"],
             "Marca": lamen["marca"],
-            "Estilo": lamen["estilo"],
+            "Estilo": arrumar_estilo_null(lamen["estilo"]),
             "País": lamen["pais"],
-            "Nota": nota_lamen,
+            "Nota": arredondar_estrelas(lamen["estrelas"]),
             "Avaliação": classificar_nota(lamen["estrelas"]),
         }
         tabela.append(linha)
     return tabela
 
 
-def buscar_por_termo(paises, marcas, busca):
-    """Filtra lámens por marca ou variedade."""
-    if not busca:
-        if not paises:
-            return marcas
-        else:
-            return paises
-    
-    termo = busca.lower().strip()
-    return [
-        prato
-        for prato in paises or marcas
-            if termo in prato["variedade"].lower() or termo in prato["marca"].lower() or termo in prato["pais"].lower()
-    ]
+
+def buscar_por_termo(nomes, marcas, estilos, paises):
+    tabela = []
+
+    for lamen in nomes:
+        if lamen in paises and lamen in marcas and lamen in estilos:
+            tabela.append(lamen)
+
+    return tabela
 
 
-def listar_paises(lamens):
-    """Retorna a lista de países sem repetição e ordenada."""
-    paises = sorted(list({lamen["pais"] for lamen in lamens if "pais" in lamen}))
-    return paises
+def listar_nomes(lamens):
+    """Retorna a lista de nomes sem repetição e ordenada."""
+    nomes = sorted(list({lamen["variedade"] for lamen in lamens if "variedade" in lamen}))
+    return nomes
 
 def listar_marcas(lamens):
     """Retorna a lista de países sem repetição e ordenada."""
     sabores = sorted(list({lamen["marca"] for lamen in lamens if "marca" in lamen}))
     return sabores
 
+def listar_estilos(lamens):
+    """Retorna a lista de estilos sem repetição e ordenada."""
+    estilos = sorted(list({lamen["estilo"] for lamen in lamens if "estilo" in lamen}))
+    return estilos
+
+def listar_paises(lamens):
+    """Retorna a lista de países sem repetição e ordenada."""
+    paises = sorted(list({lamen["pais"] for lamen in lamens if "pais" in lamen}))
+    return paises
+
+
+def filtrar_por_nome(lamens, nome):
+    """Filtra por nome escolhido."""
+    if nome == "Todos":
+        return lamens
+    return [variedade for variedade in lamens if variedade["variedade"] == nome]
+
+def filtrar_por_marca(lamens, sabor):
+    """Filtra por país escolhido."""
+    if sabor == "Todos":
+        return lamens
+    return [sabo for sabo in lamens if sabo["marca"] == sabor]
+
+def filtrar_por_estilo(lamens, estilos):
+    """Filtra por país escolhido."""
+    if estilos == "Todos":
+        return lamens
+    return [estilo for estilo in lamens if estilo["estilo"] == estilos]
 
 def filtrar_por_pais(lamens, pais):
     """Filtra por país escolhido."""
@@ -72,11 +107,6 @@ def filtrar_por_pais(lamens, pais):
         return lamens
     return [prato for prato in lamens if prato["pais"] == pais]
 
-def filtrar_por_marca(lamens, sabor):
-    """Filtra por país escolhido."""
-    if sabor == "Todos":
-        return lamens
-    return [sabor for sabor in lamens if sabor["marca"] == sabor]
 
 
 def main():
@@ -94,9 +124,6 @@ def main():
 
     col1.metric("Total de Lámens", len(lamens))
 
-    nota_media = dados.calcular_nota_media(lamens)
-    col2.metric("Nota Média Geral", f"{nota_media:.2f} 🍜")
-
     qtd_top = dados.contar_cinco_estrelas(lamens)
     col3.metric("Lámens nota 5", qtd_top)
 
@@ -108,19 +135,30 @@ def main():
     st.divider()
 
     # Filtros
-    col_busca, col_pais, col_marca = st.columns(3)
-    busca = col_busca.text_input("Buscar por Nome ou Marca")
-    pais_selecionado = col_pais.selectbox(
-        "Filtrar por País", ["Todos"] + listar_paises(lamens)
+    col_nome, col_marca, col_estilo, col_pais = st.columns(4)
+    nome_selecionado = col_nome.selectbox(
+        "Filtrar por Variedade/Nome", ["Todos"] + listar_nomes(lamens)
     )
     marca_selecionada = col_marca.selectbox(
         "Filtrar por Marca", ["Todos"] + listar_marcas(lamens)
     )
+    estilo_selecionado = col_estilo.selectbox(
+        "Filtrar por Estilo", ["Todos"] + listar_estilos(lamens)
+    )
+    pais_selecionado = col_pais.selectbox(
+            "Filtrar por País", ["Todos"] + listar_paises(lamens)
+    )
 
     # Aplicação dos filtros
+    dados_de_nomes = filtrar_por_nome(lamens, nome_selecionado)
+    dados_de_marca = filtrar_por_marca(lamens, marca_selecionada)
+    dados_de_estilo = filtrar_por_estilo(lamens, estilo_selecionado)
     dados_de_paises = filtrar_por_pais(lamens, pais_selecionado)
-    dados_de_marcar = filtrar_por_marca(lamens, marca_selecionada)
-    encontrados = buscar_por_termo(dados_de_paises, dados_de_marcar, busca)
+    encontrados = buscar_por_termo(dados_de_nomes, dados_de_marca, dados_de_estilo, dados_de_paises)
+
+    # Nota média com a lista dos encontrados
+    nota_media = dados.calcular_nota_media(encontrados)
+    col2.metric("Nota Média", f"{nota_media:.2f} 🍜")
 
     qtd_encontrados = len(encontrados)
 
@@ -129,7 +167,6 @@ def main():
     else:
         st.write(f"Lámens encontrados: {qtd_encontrados}")
         st.dataframe(montar_tabela(encontrados), use_container_width=True)
-
 
 if __name__ == "__main__":
     main()
