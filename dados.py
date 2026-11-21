@@ -62,11 +62,17 @@ def contar_cinco_estrelas(lamens):
     return sum(1 for item in lamens if item["estrelas"] >= 5.0)
 
 
-def encontrar_melhor_avaliado(lamens):
-    """Retorna o item com a maior avaliação."""
+def encontrar_polos(lamens):
+    """Retorna o item com a maior avaliação e o com a menor avaliação"""
     if not lamens:
         return None
-    return max(lamens, key=lambda item: item["estrelas"])
+    
+    validos = [lamen for lamen in lamens if lamen.get("estrelas") > 0]
+
+    maior = max(validos, key=lambda lamen: lamen["estrelas"])
+    menor = min(validos, key=lambda lamen: lamen["estrelas"])
+
+    return (maior, menor)
 
 
 if __name__ == "__main__":

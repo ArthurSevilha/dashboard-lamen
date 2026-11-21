@@ -120,17 +120,19 @@ def main():
         return
 
     # Métricas Principais em 4 colunas na parte superior
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     col1.metric("Total de Lámens", len(lamens))
 
     qtd_top = dados.contar_cinco_estrelas(lamens)
     col3.metric("Lámens nota 5", qtd_top)
 
-    melhor = dados.encontrar_melhor_avaliado(lamens)
-    if melhor:
-        col4.metric("Lámen mais bem avaliado", f"{melhor['estrelas']:.1f} 🍜")
-        col4.caption(f"{melhor['marca']} - {melhor['variedade']}")
+    polos = dados.encontrar_polos(lamens)
+    if polos:
+        col4.metric("Lámen mais bem avaliado", f"{polos[0]['estrelas']:.1f} 🍜")
+        col4.caption(f"{polos[0]['marca']} - {polos[0]['variedade']}")
+        col5.metric("Lámen mais bem avaliado", f"{polos[1]['estrelas']:.1f} 🍜")
+        col5.caption(f"{polos[1]['marca']} - {polos[1]['variedade']}")
 
     st.divider()
 
