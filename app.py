@@ -86,9 +86,9 @@ def listar_nomes(lamens):
 
 
 def listar_marcas(lamens):
-    """Retorna a lista de países sem repetição e ordenada."""
-    sabores = sorted(list({lamen["marca"] for lamen in lamens if "marca" in lamen}))
-    return sabores
+    """Retorna a lista de marcas sem repetição e ordenada."""
+    marcas = sorted(list({lamen["marca"] for lamen in lamens if "marca" in lamen}))
+    return marcas
 
 
 def listar_estilos(lamens):
@@ -110,25 +110,30 @@ def filtrar_por_nome(lamens, nome):
     return [variedade for variedade in lamens if variedade["variedade"] == nome]
 
 
-def filtrar_por_marca(lamens, sabor):
-    """Filtra por país escolhido."""
-    if sabor == "Todos":
+def filtrar_por_marca(lamens, marca):
+    """Filtra por marca escolhida."""
+    if marca == "Todos":
         return lamens
-    return [sabo for sabo in lamens if sabo["marca"] == sabor]
+    return [item for item in lamens if item["marca"] == marca]
 
 
-def filtrar_por_estilo(lamens, estilos):
-    """Filtra por país escolhido."""
-    if estilos == "Todos":
+def filtrar_por_estilo(lamens, estilo):
+    """Filtra por estilo escolhido."""
+    if estilo == "Todos":
         return lamens
-    return [estilo for estilo in lamens if estilo["estilo"] == estilos]
+    return [item for item in lamens if item["estilo"] == estilo]
 
 
 def filtrar_por_pais(lamens, pais):
-    """Filtra por país escolhido."""
+    """Filtra por país escolhido ('Todos' retorna todos os países)."""
     if pais == "Todos":
         return lamens
-    return [prato for prato in lamens if prato["pais"] == pais]
+    pais_limpo = pais.strip().lower()
+    return [
+        prato
+        for prato in lamens
+        if str(prato.get("pais", "")).strip().lower() == pais_limpo
+    ]
 
 
 def main():
@@ -148,13 +153,6 @@ def main():
 
     qtd_top = dados.contar_cinco_estrelas(lamens)
     col3.metric("Lámens nota 5", qtd_top)
-
-    polos = dados.encontrar_polos(lamens)
-    if polos:
-        col4.metric("Lámen mais bem avaliado", f"{polos[0]['estrelas']:.1f} 🍜")
-        col4.caption(f"{polos[0]['marca']} - {polos[0]['variedade']}")
-        col5.metric("Lámen mais bem avaliado", f"{polos[1]['estrelas']:.1f} 🍜")
-        col5.caption(f"{polos[1]['marca']} - {polos[1]['variedade']}")
 
     st.divider()
 
@@ -182,6 +180,19 @@ def main():
         dados_de_nomes, dados_de_marca, dados_de_estilo, dados_de_paises
     )
 
+    # Mais e menos bem avaliado de acordo com o filtro de país ("Todos" -> todos os países)
+    polos = dados.encontrar_polos(dados_de_paises)
+    if polos:
+        col4.metric("Lámen mais bem avaliado", f"{polos[0]['estrelas']:.1f} 🍜")
+        col4.caption(f"{polos[0]['marca']} - {polos[0]['variedade']}")
+        col5.metric("Lámen menos bem avaliado", f"{polos[1]['estrelas']:.1f} 🍜")
+        col5.caption(f"{polos[1]['marca']} - {polos[1]['variedade']}")
+    else:
+        col4.metric("Lámen mais bem avaliado", "NA")
+        col4.caption("Sem avaliação")
+        col5.metric("Lámen menos bem avaliado", "NA")
+        col5.caption("Sem avaliação")
+
     # Nota média com a lista dos encontrados
     nota_media = dados.calcular_nota_media(encontrados)
     col2.metric("Nota Média", f"{nota_media:.2f} 🍜")
@@ -201,7 +212,9 @@ def main():
 
         with graf_pais:
             st.caption("Top 10 Países por quantidade de lámens")
-            dados_pais = contar_por_campo(encontrados, "pais", padrao="Desconhecido", limite=10)
+            dados_pais = contar_por_campo(
+                encontrados, "pais", padrao="Desconhecido", limite=10
+            )
             st.bar_chart(dados_pais)
 
         with graf_estilo:
