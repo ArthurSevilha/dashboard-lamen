@@ -17,6 +17,7 @@ def classificar_nota(nota):
             return "NA"
         return "Péssimo"
 
+
 def arredondar_estrelas(estrelas):
     if estrelas > 0:
         qtd_estrelas = int(round(estrelas))
@@ -28,17 +29,18 @@ def arredondar_estrelas(estrelas):
 
     return nota_lamen
 
+
 def arrumar_estilo_null(estilo):
     if not estilo:
         return "NA"
     return estilo
+
 
 def montar_tabela(lamens):
     """Prepara as linhas para a tabela exibida no Streamlit."""
     tabela = []
 
     for lamen in lamens:
-
         linha = {
             "Variedade / Nome": lamen["variedade"],
             "Marca": lamen["marca"],
@@ -50,6 +52,21 @@ def montar_tabela(lamens):
         tabela.append(linha)
     return tabela
 
+
+def contar_por_campo(lamens, campo, padrao="NA", limite=None):
+    """Conta ocorrências de um campo e retorna um dicionário ordenado."""
+    contagem = {}
+    for lamen in lamens:
+        valor = str(lamen.get(campo) or "").strip()
+        if not valor:
+            valor = padrao
+        contagem[valor] = contagem.get(valor, 0) + 1
+
+    ordenado = sorted(contagem.items(), key=lambda item: item[1], reverse=True)
+    if limite is not None:
+        ordenado = ordenado[:limite]
+
+    return {chave: valor for chave, valor in ordenado}
 
 
 def buscar_por_termo(nomes, marcas, estilos, paises):
@@ -67,15 +84,18 @@ def listar_nomes(lamens):
     nomes = sorted(list({lamen["variedade"] for lamen in lamens if "variedade" in lamen}))
     return nomes
 
+
 def listar_marcas(lamens):
     """Retorna a lista de países sem repetição e ordenada."""
     sabores = sorted(list({lamen["marca"] for lamen in lamens if "marca" in lamen}))
     return sabores
 
+
 def listar_estilos(lamens):
     """Retorna a lista de estilos sem repetição e ordenada."""
     estilos = sorted(list({lamen["estilo"] for lamen in lamens if "estilo" in lamen}))
     return estilos
+
 
 def listar_paises(lamens):
     """Retorna a lista de países sem repetição e ordenada."""
@@ -89,11 +109,13 @@ def filtrar_por_nome(lamens, nome):
         return lamens
     return [variedade for variedade in lamens if variedade["variedade"] == nome]
 
+
 def filtrar_por_marca(lamens, sabor):
     """Filtra por país escolhido."""
     if sabor == "Todos":
         return lamens
     return [sabo for sabo in lamens if sabo["marca"] == sabor]
+
 
 def filtrar_por_estilo(lamens, estilos):
     """Filtra por país escolhido."""
@@ -101,12 +123,12 @@ def filtrar_por_estilo(lamens, estilos):
         return lamens
     return [estilo for estilo in lamens if estilo["estilo"] == estilos]
 
+
 def filtrar_por_pais(lamens, pais):
     """Filtra por país escolhido."""
     if pais == "Todos":
         return lamens
     return [prato for prato in lamens if prato["pais"] == pais]
-
 
 
 def main():
@@ -119,7 +141,7 @@ def main():
         st.error("Nenhum dado encontrado no arquivo CSV.")
         return
 
-    # Métricas Principais em 4 colunas na parte superior
+    # Métricas Principais em 5 colunas na parte superior
     col1, col2, col3, col4, col5 = st.columns(5)
 
     col1.metric("Total de Lámens", len(lamens))
@@ -148,7 +170,7 @@ def main():
         "Filtrar por Estilo", ["Todos"] + listar_estilos(lamens)
     )
     pais_selecionado = col_pais.selectbox(
-            "Filtrar por País", ["Todos"] + listar_paises(lamens)
+        "Filtrar por País", ["Todos"] + listar_paises(lamens)
     )
 
     # Aplicação dos filtros
@@ -156,7 +178,9 @@ def main():
     dados_de_marca = filtrar_por_marca(lamens, marca_selecionada)
     dados_de_estilo = filtrar_por_estilo(lamens, estilo_selecionado)
     dados_de_paises = filtrar_por_pais(lamens, pais_selecionado)
-    encontrados = buscar_por_termo(dados_de_nomes, dados_de_marca, dados_de_estilo, dados_de_paises)
+    encontrados = buscar_por_termo(
+        dados_de_nomes, dados_de_marca, dados_de_estilo, dados_de_paises
+    )
 
     # Nota média com a lista dos encontrados
     nota_media = dados.calcular_nota_media(encontrados)
@@ -169,6 +193,22 @@ def main():
     else:
         st.write(f"Lámens encontrados: {qtd_encontrados}")
         st.dataframe(montar_tabela(encontrados), use_container_width=True)
+
+        st.divider()
+        st.subheader("Gráficos")
+
+        graf_pais, graf_estilo = st.columns(2)
+
+        with graf_pais:
+            st.caption("Top 10 Países por quantidade de lámens")
+            dados_pais = contar_por_campo(encontrados, "pais", padrao="Desconhecido", limite=10)
+            st.bar_chart(dados_pais)
+
+        with graf_estilo:
+            st.caption("Quantidade de lámens por Estilo")
+            dados_estilo = contar_por_campo(encontrados, "estilo", padrao="NA")
+            st.bar_chart(dados_estilo)
+
 
 if __name__ == "__main__":
     main()
